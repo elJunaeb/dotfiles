@@ -1,0 +1,23 @@
+#!/bin/sh
+
+choice=$(printf "Lock\nLogout\nShutdown\nReboot\nSuspend\nHibernate" | mew -noi -i -p "power:")
+case "$choice" in
+	Lock)
+		loginctl lock-session
+		;;
+	Logout)
+		loginctl terminate-user "$USER"
+		;;
+	Suspend)
+		systemctl suspend
+		;;
+	Hibernate)
+		systemctl hibernate
+		;;
+	Reboot)
+		systemctl reboot
+		;;
+	Shutdown)
+		systemctl poweroff
+		;;
+esac
