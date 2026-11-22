@@ -6,10 +6,16 @@
 /* appearance */
 static const int sloppyfocus               = 1;  /* focus follows mouse */
 static const int bypass_surface_visibility = 0;  /* 1 means idle inhibitors will disable idle tracking even if it's surface isn't visible  */
-static const unsigned int borderpx         = 2;  /* border pixel of windows */
+static const unsigned int borderpx         = 3;  /* border pixel of windows */
+static int enablegaps                      = 1;
+static const int gappx                     = 8;
+static const int smartgaps                 = 1;
+static const int smartborders              = 1;
+
 static const float rootcolor[]             = COLOR(0x222222ff);
 static const float bordercolor[]           = COLOR(0x282c34ff);
-static const float focuscolor[]            = COLOR(0x56b6c2ff);
+// static const float focuscolor[]            = COLOR(0x56b6c2ff);
+static const float focuscolor[]            = COLOR(0xc678ddff);
 static const float urgentcolor[]           = COLOR(0xff0000ff);
 /* This conforms to the xdg-protocol. Set the alpha to zero to restore the old behavior */
 static const float fullscreen_bg[]         = {0.1f, 0.1f, 0.1f, 1.0f}; /* You can also use glsl colors */
@@ -41,6 +47,8 @@ static const Layout layouts[] = {
 	{ "[]=",      tile },
 	{ "><>",      NULL },    /* no layout function means floating behavior */
 	{ "[M]",      monocle },
+    { "TTT",      btile},
+    { "|M|",      centeredmaster},
 };
 
 /* monitors */
@@ -125,9 +133,8 @@ static const enum libinput_config_tap_button_map button_map = LIBINPUT_CONFIG_TA
 
 /* commands */
 static const char *termcmd[] = { "foot", NULL };
-static const char *menucmd[] = { "wmenu-run", NULL };
-// static const char *menucmd[] = { "wmenu-run-desktop", NULL };
-static const char *powermenu[] = { "wmenu-powermenu", NULL };
+static const char *menucmd[] = { "mew-drun", NULL };
+static const char *powermenu[] = { "mew-powermenu", NULL };
 static const char *filemanager[] = { "pcmanfm-qt", NULL };
 
 static const char *brightness_up[] = { "brightnessctl", "s", "5%+", NULL};
@@ -148,18 +155,26 @@ static const Key keys[] = {
 	{ MODKEY,                    XKB_KEY_BackSpace,  spawn,          {.v = powermenu} },
 	{ MODKEY,                    XKB_KEY_j,          focusstack,     {.i = +1} },
 	{ MODKEY,                    XKB_KEY_k,          focusstack,     {.i = -1} },
+	{ MODKEY|WLR_MODIFIER_SHIFT, XKB_KEY_J,          movestack,      {.i = +1} },
+	{ MODKEY|WLR_MODIFIER_SHIFT, XKB_KEY_K,          movestack,      {.i = -1} },
 	{ MODKEY,                    XKB_KEY_i,          incnmaster,     {.i = +1} },
 	{ MODKEY,                    XKB_KEY_d,          incnmaster,     {.i = -1} },
 	{ MODKEY,                    XKB_KEY_h,          setmfact,       {.f = -0.05f} },
 	{ MODKEY,                    XKB_KEY_l,          setmfact,       {.f = +0.05f} },
+	{ MODKEY|WLR_MODIFIER_CTRL,  XKB_KEY_l,          setcfact,       {.f = +0.25f} },
+	{ MODKEY|WLR_MODIFIER_CTRL,  XKB_KEY_h,          setcfact,       {.f = -0.25f} },
+	{ MODKEY|WLR_MODIFIER_CTRL,  XKB_KEY_o,          setcfact,       {.f = 0.0f} },
 	{ MODKEY,                    XKB_KEY_s,          zoom,           {0} },
 	{ MODKEY,                    XKB_KEY_Tab,        view,           {0} },
+    { MODKEY,                    XKB_KEY_g,          togglegaps,     {0} },
 	{ MODKEY,                    XKB_KEY_q,          killclient,     {0} },
 	{ MODKEY,                    XKB_KEY_t,          setlayout,      {.v = &layouts[0]} },
 	{ MODKEY,                    XKB_KEY_f,          setlayout,      {.v = &layouts[1]} },
 	{ MODKEY,                    XKB_KEY_m,          setlayout,      {.v = &layouts[2]} },
+	{ MODKEY,                    XKB_KEY_b,          setlayout,      {.v = &layouts[3]} },
+	{ MODKEY,                    XKB_KEY_c,          setlayout,      {.v = &layouts[4]} },
 	{ MODKEY|WLR_MODIFIER_SHIFT, XKB_KEY_space,      togglefloating, {0} },
-	{ MODKEY,                    XKB_KEY_F11,        togglefullscreen, {0} },
+	{ MODKEY|WLR_MODIFIER_SHIFT, XKB_KEY_F,          togglefullscreen, {0} },
 	{ MODKEY,                    XKB_KEY_0,          view,           {.ui = ~0} },
 	{ MODKEY|WLR_MODIFIER_SHIFT, XKB_KEY_equal,      tag,            {.ui = ~0} },
 	{ MODKEY,                    XKB_KEY_comma,      focusmon,       {.i = WLR_DIRECTION_LEFT} },
@@ -167,15 +182,24 @@ static const Key keys[] = {
 	{ MODKEY|WLR_MODIFIER_SHIFT, XKB_KEY_less,       tagmon,         {.i = WLR_DIRECTION_LEFT} },
 	{ MODKEY|WLR_MODIFIER_SHIFT, XKB_KEY_greater,    tagmon,         {.i = WLR_DIRECTION_RIGHT} },
 	TAGKEYS(          XKB_KEY_1, XKB_KEY_exclam,                     0),
-	TAGKEYS(          XKB_KEY_2, XKB_KEY_at,                         1),
+	TAGKEYS(          XKB_KEY_2, XKB_KEY_quotedbl,                   1),
 	TAGKEYS(          XKB_KEY_3, XKB_KEY_numbersign,                 2),
 	TAGKEYS(          XKB_KEY_4, XKB_KEY_dollar,                     3),
 	TAGKEYS(          XKB_KEY_5, XKB_KEY_percent,                    4),
-	TAGKEYS(          XKB_KEY_6, XKB_KEY_asciicircum,                5),
-	TAGKEYS(          XKB_KEY_7, XKB_KEY_ampersand,                  6),
-	TAGKEYS(          XKB_KEY_8, XKB_KEY_asterisk,                   7),
-	TAGKEYS(          XKB_KEY_9, XKB_KEY_parenleft,                  8),
+	TAGKEYS(          XKB_KEY_6, XKB_KEY_ampersand,                  5),
+	TAGKEYS(          XKB_KEY_7, XKB_KEY_slash,                      6),
+	TAGKEYS(          XKB_KEY_8, XKB_KEY_parenleft,                  7),
+	TAGKEYS(          XKB_KEY_9, XKB_KEY_parenright,                 8),
 	{ MODKEY|WLR_MODIFIER_SHIFT, XKB_KEY_Q,          quit,           {0} },
+
+    // brightness
+    { 0,                         XKB_KEY_XF86MonBrightnessDown,     spawn,      {.v = brightness_down} },
+    { 0,                         XKB_KEY_XF86MonBrightnessUp,       spawn,      {.v = brightness_up} },
+
+    // Audio
+    { 0,                         XKB_KEY_XF86AudioLowerVolume,     spawn,      {.v = volume_down} },
+    { 0,                         XKB_KEY_XF86AudioRaiseVolume,     spawn,      {.v = volume_up} },
+    { 0,                         XKB_KEY_XF86AudioMute,            spawn,      {.v = mute} },
 
 	/* Ctrl-Alt-Backspace and Ctrl-Alt-Fx used to be handled by X server */
 	{ WLR_MODIFIER_CTRL|WLR_MODIFIER_ALT,XKB_KEY_Terminate_Server, quit, {0} },
